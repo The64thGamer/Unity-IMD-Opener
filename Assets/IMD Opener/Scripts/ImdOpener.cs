@@ -8,7 +8,7 @@ public class ImdOpener : MonoBehaviour
     public string filePath;
     public bool readFileDebug;
     byte[] imdFile;
-    IMD currentIMD;
+    public IMD currentIMD;
 
     private void FixedUpdate()
     {
@@ -90,7 +90,7 @@ public class ImdOpener : MonoBehaviour
             }
 
             //Sector Cylinder Map (Optional)
-            if (GetBit(currentIMD.tracks[i].head, 7))
+            if (GetBit(currentTrack.head, 7))
             {
                 currentTrack.cylinderMap = new byte[currentTrack.noSectorsInTrack];
                 for (int k = 0; k < currentTrack.cylinderMap.Length; k++)
@@ -101,7 +101,7 @@ public class ImdOpener : MonoBehaviour
             }
 
             //Sector Head Map (Optional)
-            if (GetBit(currentIMD.tracks[i].head, 6))
+            if (GetBit(currentTrack.head, 6))
             {
                 currentTrack.headMap = new byte[currentTrack.noSectorsInTrack];
                 for (int k = 0; k < currentTrack.headMap.Length; k++)
@@ -227,6 +227,7 @@ public class ImdOpener : MonoBehaviour
     }
 }
 
+[System.Serializable]
 public struct IMD
 {
     public string header;
@@ -234,6 +235,7 @@ public struct IMD
     public List<IMDTrack> tracks;
 }
 
+[System.Serializable]
 public struct IMDTrack
 {
     public byte modeValue;
@@ -247,6 +249,8 @@ public struct IMDTrack
     public IMDSectorData[] sectors;
 
 }
+
+[System.Serializable]
 public struct IMDSectorData
 {
     public byte dataType;
