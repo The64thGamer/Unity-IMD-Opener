@@ -8,6 +8,7 @@ public class ImdOpener : MonoBehaviour
 {
     public string filePath;
     public bool readFileDebug;
+    public bool saveFileDebug;
     byte[] imdFile;
     public IMD currentIMD;
 
@@ -17,6 +18,11 @@ public class ImdOpener : MonoBehaviour
         {
             readFileDebug = false;
             LoadIMDFile();
+        }
+        if (saveFileDebug)
+        {
+            saveFileDebug = false;
+            SaveIMGFile();
         }
     }
 
@@ -64,11 +70,14 @@ public class ImdOpener : MonoBehaviour
         currentIMD.comment = System.Text.Encoding.ASCII.GetString(commentBytes.ToArray());
 
         //Track Reader
-        int j = 0;
         currentIMD.tracks = new List<IMDTrack>();
 
-        for (int i = 0; i < 1; i++)
+        while (true)
         {
+            if (e >= imdFile.Length)
+            {
+                break;
+            }
             //Track Header
             IMDTrack currentTrack = new IMDTrack();
             currentTrack.modeValue = imdFile[e];
@@ -158,7 +167,7 @@ public class ImdOpener : MonoBehaviour
                                 Debug.LogError("IMD Opener: Sector Size outside of range 0-6 - '" + currentTrack.sectorSize + "'");
                                 break;
                         }
-                        
+
                         for (int p = 0; p < currentTrack.sectors[k].data.Length; p++)
                         {
                             currentTrack.sectors[k].data[p] = imdFile[e];
@@ -170,7 +179,6 @@ public class ImdOpener : MonoBehaviour
 
             //Final
             currentIMD.tracks.Add(currentTrack);
-            j++;
         }
 
         //Debug
@@ -263,39 +271,146 @@ public class ImdOpener : MonoBehaviour
                 switch (currentIMD.tracks[i].sectors[e].dataType)
                 {
                     case 0:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Sector Data Unavailable");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Sector Data Unavailable");
                         break;
                     case 1:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Normal Data");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Normal Data");
                         break;
                     case 2:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Normal Data (Compressed)");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Normal Data (Compressed)");
                         break;
                     case 3:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Data w/ 'Deleted-Data' Address Mark");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Data w/ 'Deleted-Data' Address Mark");
                         break;
                     case 4:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Data w/ 'Deleted-Data' Address Mark (Compressed)");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Data w/ 'Deleted-Data' Address Mark (Compressed)");
                         break;
                     case 5:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Read Error Data");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Read Error Data");
                         break;
                     case 6:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Read Error Data (Compressed)");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Read Error Data (Compressed)");
                         break;
                     case 7:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Deleted Data");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Deleted Data");
                         break;
                     case 8:
-                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Deleted Data (Compressed)");
+                        Debug.Log("IMD Opener: Track " + i + " Sector " + e + " Data Type - Deleted Data (Compressed)");
                         break;
                     default:
-                        Debug.LogError("IMD Opener: Sector " + e + " Data Type outside of range 0-8 - '" + currentIMD.tracks[i].sectors[e].dataType + "'");
+                        Debug.LogError("IMD Opener: Track " + i + " Sector " + e + " Data Type outside of range 0-8 - '" + currentIMD.tracks[i].sectors[e].dataType + "'");
                         break;
                 }
             }
         }
     }
+
+    public void SaveIMGFile()
+    {
+        //Count Bytes
+        int bytesTotal = 0;
+
+        for (int i = 0; i < currentIMD.tracks.Count; i++)
+        {
+            switch (currentIMD.tracks[i].sectorSize)
+            {
+                case 0:
+                    bytesTotal += 128 * currentIMD.tracks[i].sectors.Length;
+                    break;
+                case 1:
+                    bytesTotal += 256 * currentIMD.tracks[i].sectors.Length;
+                    break;
+                case 2:
+                    bytesTotal += 512 * currentIMD.tracks[i].sectors.Length;
+                    break;
+                case 3:
+                    bytesTotal += 1024 * currentIMD.tracks[i].sectors.Length;
+                    break;
+                case 4:
+                    bytesTotal += 2048 * currentIMD.tracks[i].sectors.Length;
+                    break;
+                case 5:
+                    bytesTotal += 4096 * currentIMD.tracks[i].sectors.Length;
+                    break;
+                case 6:
+                    bytesTotal += 8192 * currentIMD.tracks[i].sectors.Length;
+                    break;
+                default:
+                    break;
+            }
+        }
+        byte[] bytes = new byte[bytesTotal];
+        int index = 0;
+        //Save Data
+        while (index < bytes.Length)
+        {
+            for (int i = 0; i < currentIMD.tracks.Count; i++)
+            {
+                int sectorSizeBytes = 0;
+                switch (currentIMD.tracks[i].sectorSize)
+                {
+                    case 0:
+                        sectorSizeBytes = 128 * currentIMD.tracks[i].sectors.Length;
+                        break;
+                    case 1:
+                        sectorSizeBytes = 256 * currentIMD.tracks[i].sectors.Length;
+                        break;
+                    case 2:
+                        sectorSizeBytes = 512 * currentIMD.tracks[i].sectors.Length;
+                        break;
+                    case 3:
+                        sectorSizeBytes = 1024 * currentIMD.tracks[i].sectors.Length;
+                        break;
+                    case 4:
+                        sectorSizeBytes = 2048 * currentIMD.tracks[i].sectors.Length;
+                        break;
+                    case 5:
+                        sectorSizeBytes = 4096 * currentIMD.tracks[i].sectors.Length;
+                        break;
+                    case 6:
+                        sectorSizeBytes = 8192 * currentIMD.tracks[i].sectors.Length;
+                        break;
+                    default:
+                        break;
+                }
+
+                for (int e = 0; e < currentIMD.tracks[i].sectors.Length; e++)
+                {
+                    if (currentIMD.tracks[i].sectors[e].dataType
+ != 0)
+                    {
+                        if (currentIMD.tracks[i].sectors[e].dataType % 2 == 0)
+                        {
+                            //Compressed Data
+                            for (int v = 0; v < sectorSizeBytes; v++)
+                            {
+                                bytes[index] = currentIMD.tracks[i].sectors[e].compressedValue;
+                                index++;
+                            }
+                        }
+                        else
+                        {
+                            //Regular Data
+                            for (int p = 0; p < currentIMD.tracks[i].sectors[e].data.Length; p++)
+                            {
+                                bytes[index] = currentIMD.tracks[i].sectors[e].data[p];
+                                index++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        //Unreadable Data
+                        index += sectorSizeBytes;
+                    }
+                }
+            }
+        }
+
+        string newpath = filePath.Substring(0, filePath.Length - 3) + "IMG";
+        File.WriteAllBytes(newpath, bytes);
+    }
+
     bool GetBit(byte b, int bitNumber)
     {
         System.Collections.BitArray ba = new BitArray(new byte[] { b });
