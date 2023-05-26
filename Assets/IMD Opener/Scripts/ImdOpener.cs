@@ -61,6 +61,12 @@ public class ImdOpener : MonoBehaviour
 
         currentIMD.comment = System.Text.Encoding.ASCII.GetString(commentBytes.ToArray());
 
+        //Track Reader
+        while (true)
+        {
+
+        }
+
         //Debug
         ReadAllContents();
     }
@@ -74,7 +80,15 @@ public class ImdOpener : MonoBehaviour
     {
         Debug.Log("IMD Opener: Header - '" + currentIMD.header + "'");
         Debug.Log("IMD Opener: Comment - '" + currentIMD.comment + "'");
-
+        for (int i = 0; i < currentIMD.tracks.Count; i++)
+        {
+            Debug.Log("IMD Opener: Reading Track #" + i);
+;           Debug.Log("IMD Opener: Mode Value - '" + currentIMD.tracks[i].modeValue + "'");
+            Debug.Log("IMD Opener: Cylinder - '" + currentIMD.tracks[i].cylinder + "'");
+            Debug.Log("IMD Opener: Head - '" + currentIMD.tracks[i].head + "'");
+            Debug.Log("IMD Opener: # Sectors In Track - '" + currentIMD.tracks[i].noSectorsInTrack + "'");
+            Debug.Log("IMD Opener: Sector Size - '" + currentIMD.tracks[i].sectorSize + "'");
+        }
     }
 }
 
@@ -82,4 +96,14 @@ public struct IMD
 {
     public string header;
     public string comment;
+    public List<IMDTrack> tracks;
+}
+
+public struct IMDTrack
+{
+    public byte modeValue;
+    public byte cylinder;
+    public byte head;
+    public byte noSectorsInTrack;
+    public byte sectorSize;
 }
