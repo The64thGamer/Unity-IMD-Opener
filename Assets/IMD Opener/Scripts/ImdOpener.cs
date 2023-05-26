@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +13,7 @@ public class ImdOpener : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if(readFileDebug)
+        if (readFileDebug)
         {
             readFileDebug = false;
             LoadIMDFile();
@@ -119,12 +120,51 @@ public class ImdOpener : MonoBehaviour
                 currentTrack.sectors[k].dataType = imdFile[e];
                 e++;
 
-                //Data
-                currentTrack.sectors[k].data = new byte[(currentTrack.sectorSize + 1) * 128];
-                for (int p = 0; p < currentTrack.sectors[k].data.Length; p++)
+                if (currentTrack.sectors[k].dataType != 0)
                 {
-                    currentTrack.sectors[k].data[p] = imdFile[e];
-                    e++;
+                    if (currentTrack.sectors[k].dataType % 2 == 0)
+                    {
+                        //Compressed Data
+                        currentTrack.sectors[k].compressedValue = imdFile[e];
+                        e++;
+                    }
+                    else
+                    {
+                        //Data
+                        switch (currentTrack.sectorSize)
+                        {
+                            case 0:
+                                currentTrack.sectors[k].data = new byte[128];
+                                break;
+                            case 1:
+                                currentTrack.sectors[k].data = new byte[256];
+                                break;
+                            case 2:
+                                currentTrack.sectors[k].data = new byte[512];
+                                break;
+                            case 3:
+                                currentTrack.sectors[k].data = new byte[1024];
+                                break;
+                            case 4:
+                                currentTrack.sectors[k].data = new byte[2048];
+                                break;
+                            case 5:
+                                currentTrack.sectors[k].data = new byte[4096];
+                                break;
+                            case 6:
+                                currentTrack.sectors[k].data = new byte[8192];
+                                break;
+                            default:
+                                Debug.LogError("IMD Opener: Sector Size outside of range 0-6 - '" + currentTrack.sectorSize + "'");
+                                break;
+                        }
+                        
+                        for (int p = 0; p < currentTrack.sectors[k].data.Length; p++)
+                        {
+                            currentTrack.sectors[k].data[p] = imdFile[e];
+                            e++;
+                        }
+                    }
                 }
             }
 
@@ -174,7 +214,7 @@ public class ImdOpener : MonoBehaviour
                     break;
             }
             Debug.Log("IMD Opener: Cylinder - '" + currentIMD.tracks[i].cylinder + "'");
-            if (!GetBit(currentIMD.tracks[i].head,0))
+            if (!GetBit(currentIMD.tracks[i].head, 0))
             {
                 Debug.Log("IMD Opener: Head - '0'");
             }
@@ -218,6 +258,42 @@ public class ImdOpener : MonoBehaviour
                     Debug.LogError("IMD Opener: Sector Size outside of range 0-6 - '" + currentIMD.tracks[i].sectorSize + "'");
                     break;
             }
+            for (int e = 0; e < currentIMD.tracks[i].sectors.Length; e++)
+            {
+                switch (currentIMD.tracks[i].sectors[e].dataType)
+                {
+                    case 0:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Sector Data Unavailable");
+                        break;
+                    case 1:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Normal Data");
+                        break;
+                    case 2:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Normal Data (Compressed)");
+                        break;
+                    case 3:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Data w/ 'Deleted-Data' Address Mark");
+                        break;
+                    case 4:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Data w/ 'Deleted-Data' Address Mark (Compressed)");
+                        break;
+                    case 5:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Read Error Data");
+                        break;
+                    case 6:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Read Error Data (Compressed)");
+                        break;
+                    case 7:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Deleted Data");
+                        break;
+                    case 8:
+                        Debug.Log("IMD Opener: Sector " + e + " Data Type - Deleted Data (Compressed)");
+                        break;
+                    default:
+                        Debug.LogError("IMD Opener: Sector " + e + " Data Type outside of range 0-8 - '" + currentIMD.tracks[i].sectors[e].dataType + "'");
+                        break;
+                }
+            }
         }
     }
     bool GetBit(byte b, int bitNumber)
@@ -255,5 +331,6 @@ public struct IMDSectorData
 {
     public byte dataType;
     public byte[] data;
+    public byte compressedValue;
 }
 
