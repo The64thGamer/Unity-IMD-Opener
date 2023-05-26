@@ -242,7 +242,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   filePath: Assets/IMD Opener/Examples/HUBOT.IMD
-  readFileDebug: 0
+  readFileDebug: 1
+  saveFileDebug: 0
+  currentIMD:
+    header: 
+    comment: 
+    tracks: []
 --- !u!4 &740054862
 Transform:
   m_ObjectHideFlags: 0
