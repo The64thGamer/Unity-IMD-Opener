@@ -50,6 +50,7 @@ public class ImdOpener : MonoBehaviour
             //Check for ASCII Terminator
             if (imdFile[e] == 26)
             {
+                e++;
                 break;
             }
             else
@@ -62,10 +63,24 @@ public class ImdOpener : MonoBehaviour
         currentIMD.comment = System.Text.Encoding.ASCII.GetString(commentBytes.ToArray());
 
         //Track Reader
-        while (true)
-        {
+        int j = 0;
+        currentIMD.tracks = new List<IMDTrack>();
 
-        }
+        IMDTrack currentTrack = new IMDTrack();
+        currentTrack.modeValue = imdFile[e];
+        e++;
+        currentTrack.cylinder = imdFile[e];
+        e++;
+        currentTrack.head = imdFile[e];
+        e++;
+        currentTrack.noSectorsInTrack = imdFile[e];
+        e++;
+        currentTrack.sectorSize = imdFile[e];
+        e++;
+
+
+        currentIMD.tracks.Add(currentTrack);
+        j++;
 
         //Debug
         ReadAllContents();
@@ -83,7 +98,30 @@ public class ImdOpener : MonoBehaviour
         for (int i = 0; i < currentIMD.tracks.Count; i++)
         {
             Debug.Log("IMD Opener: Reading Track #" + i);
-;           Debug.Log("IMD Opener: Mode Value - '" + currentIMD.tracks[i].modeValue + "'");
+            switch (currentIMD.tracks[i].modeValue)
+            {
+                case 0:
+                    Debug.Log("IMD Opener: Mode Value - '500' kbps (FM)");
+                    break;
+                case 1:
+                    Debug.Log("IMD Opener: Mode Value - '300' kbps (FM)");
+                    break;
+                case 2:
+                    Debug.Log("IMD Opener: Mode Value - '250' kbps (FM)");
+                    break;
+                case 3:
+                    Debug.Log("IMD Opener: Mode Value - '500' kbps (MFM)");
+                    break;
+                case 4:
+                    Debug.Log("IMD Opener: Mode Value - '300' kbps (MFM)");
+                    break;
+                case 5:
+                    Debug.Log("IMD Opener: Mode Value - '250' kbps (MFM)");
+                    break;
+                default:
+                    Debug.LogError("IMD Opener: Mode Value outside of range 0-5 - '" + currentIMD.tracks[i].modeValue + "'");
+                    break;
+            }
             Debug.Log("IMD Opener: Cylinder - '" + currentIMD.tracks[i].cylinder + "'");
             Debug.Log("IMD Opener: Head - '" + currentIMD.tracks[i].head + "'");
             Debug.Log("IMD Opener: # Sectors In Track - '" + currentIMD.tracks[i].noSectorsInTrack + "'");
