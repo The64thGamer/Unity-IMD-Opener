@@ -24,7 +24,7 @@ public class ImdOpener : MonoBehaviour
         //Setup
         ReadFileIntoByte();
 
-        if(imdFile == null)
+        if (imdFile == null)
         {
             Debug.Log("IMD Opener: No File, Error");
             return;
@@ -37,7 +37,7 @@ public class ImdOpener : MonoBehaviour
         {
             byteHeader[i] = imdFile[i];
         }
-        
+
         currentIMD.header = System.Text.Encoding.ASCII.GetString(byteHeader);
 
         //Comment
@@ -66,21 +66,72 @@ public class ImdOpener : MonoBehaviour
         int j = 0;
         currentIMD.tracks = new List<IMDTrack>();
 
-        IMDTrack currentTrack = new IMDTrack();
-        currentTrack.modeValue = imdFile[e];
-        e++;
-        currentTrack.cylinder = imdFile[e];
-        e++;
-        currentTrack.head = imdFile[e];
-        e++;
-        currentTrack.noSectorsInTrack = imdFile[e];
-        e++;
-        currentTrack.sectorSize = imdFile[e];
-        e++;
+        for (int i = 0; i < 1; i++)
+        {
+            //Track Header
+            IMDTrack currentTrack = new IMDTrack();
+            currentTrack.modeValue = imdFile[e];
+            e++;
+            currentTrack.cylinder = imdFile[e];
+            e++;
+            currentTrack.head = imdFile[e];
+            e++;
+            currentTrack.noSectorsInTrack = imdFile[e];
+            e++;
+            currentTrack.sectorSize = imdFile[e];
+            e++;
 
+            //Sector Numbering Map
+            currentTrack.numberingMap = new byte[currentTrack.noSectorsInTrack];
+            for (int k = 0; k < currentTrack.numberingMap.Length; k++)
+            {
+                currentTrack.numberingMap[k] = imdFile[e];
+                e++;
+            }
 
-        currentIMD.tracks.Add(currentTrack);
-        j++;
+            //Sector Cylinder Map (Optional)
+            if (GetBit(currentIMD.tracks[i].head, 7))
+            {
+                currentTrack.cylinderMap = new byte[currentTrack.noSectorsInTrack];
+                for (int k = 0; k < currentTrack.cylinderMap.Length; k++)
+                {
+                    currentTrack.cylinderMap[k] = imdFile[e];
+                    e++;
+                }
+            }
+
+            //Sector Head Map (Optional)
+            if (GetBit(currentIMD.tracks[i].head, 6))
+            {
+                currentTrack.headMap = new byte[currentTrack.noSectorsInTrack];
+                for (int k = 0; k < currentTrack.headMap.Length; k++)
+                {
+                    currentTrack.headMap[k] = imdFile[e];
+                    e++;
+                }
+            }
+
+            //Sector Data Records
+            currentTrack.sectors = new IMDSectorData[currentTrack.noSectorsInTrack];
+            for (int k = 0; k < currentTrack.sectors.Length; k++)
+            {
+                //Data Type
+                currentTrack.sectors[k].dataType = imdFile[e];
+                e++;
+
+                //Data
+                currentTrack.sectors[k].data = new byte[(currentTrack.sectorSize + 1) * 128];
+                for (int p = 0; p < currentTrack.sectors[k].data.Length; p++)
+                {
+                    currentTrack.sectors[k].data[p] = imdFile[e];
+                    e++;
+                }
+            }
+
+            //Final
+            currentIMD.tracks.Add(currentTrack);
+            j++;
+        }
 
         //Debug
         ReadAllContents();
@@ -123,10 +174,56 @@ public class ImdOpener : MonoBehaviour
                     break;
             }
             Debug.Log("IMD Opener: Cylinder - '" + currentIMD.tracks[i].cylinder + "'");
-            Debug.Log("IMD Opener: Head - '" + currentIMD.tracks[i].head + "'");
+            if (!GetBit(currentIMD.tracks[i].head,0))
+            {
+                Debug.Log("IMD Opener: Head - '0'");
+            }
+            else
+            {
+                Debug.Log("IMD Opener: Head - '1'");
+            }
+            if (GetBit(currentIMD.tracks[i].head, 6))
+            {
+                Debug.Log("IMD Opener: Track has Sector Head Map");
+            }
+            if (GetBit(currentIMD.tracks[i].head, 7))
+            {
+                Debug.Log("IMD Opener: Track has Sector Cylinder Map");
+            }
             Debug.Log("IMD Opener: # Sectors In Track - '" + currentIMD.tracks[i].noSectorsInTrack + "'");
-            Debug.Log("IMD Opener: Sector Size - '" + currentIMD.tracks[i].sectorSize + "'");
+            switch (currentIMD.tracks[i].sectorSize)
+            {
+                case 0:
+                    Debug.Log("IMD Opener: Sector Size - '128' bytes/sector");
+                    break;
+                case 1:
+                    Debug.Log("IMD Opener: Sector Size - '256' bytes/sector");
+                    break;
+                case 2:
+                    Debug.Log("IMD Opener: Sector Size - '512' bytes/sector");
+                    break;
+                case 3:
+                    Debug.Log("IMD Opener: Sector Size - '1024' bytes/sector");
+                    break;
+                case 4:
+                    Debug.Log("IMD Opener: Sector Size - '2048' bytes/sector");
+                    break;
+                case 5:
+                    Debug.Log("IMD Opener: Sector Size - '4096' bytes/sector");
+                    break;
+                case 6:
+                    Debug.Log("IMD Opener: Sector Size - '8192' bytes/sector");
+                    break;
+                default:
+                    Debug.LogError("IMD Opener: Sector Size outside of range 0-6 - '" + currentIMD.tracks[i].sectorSize + "'");
+                    break;
+            }
         }
+    }
+    bool GetBit(byte b, int bitNumber)
+    {
+        System.Collections.BitArray ba = new BitArray(new byte[] { b });
+        return ba.Get(bitNumber);
     }
 }
 
@@ -144,4 +241,15 @@ public struct IMDTrack
     public byte head;
     public byte noSectorsInTrack;
     public byte sectorSize;
+    public byte[] numberingMap;
+    public byte[] cylinderMap;
+    public byte[] headMap;
+    public IMDSectorData[] sectors;
+
 }
+public struct IMDSectorData
+{
+    public byte dataType;
+    public byte[] data;
+}
+
